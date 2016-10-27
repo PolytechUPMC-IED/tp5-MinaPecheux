@@ -1,0 +1,164 @@
+EXERCICE 1
+-----------------------------------------------------------
+1. /
+2. La commande ls -a nous montre qu'un dossier caché .git a été créé.
+3. touch test.txt
+4. git status :
+Sur la branche master
+
+Validation initiale
+
+Fichiers non suivis:
+  (utilisez "git add <fichier>..." pour inclure dans ce qui sera validé)
+
+	test.txt
+
+aucune modification ajoutée à la validation mais des fichiers non suivis sont présents (utilisez "git add" pour les suivre)
+
+
+Git nous indique la branche actuelle de travail (branche par défaut "master") et indique qu'il y a un fichier non suivi dans le projet (test.txt). Ceci est montré plus clairement avec le nom du fichier écrit en rouge dans le terminal.
+Si on commit le projet, ce fichier ne sera pas envoyé car il ne fait pas partie des fichiers suivis par le gestionnaire de version (il n'a pas encore été ajouté à la liste !).
+
+5. git add test.txt
+   git status :
+Sur la branche master
+
+Validation initiale
+
+Modifications qui seront validées :
+  (utilisez "git rm --cached <fichier>..." pour désindexer)
+
+	nouveau fichier: test.txt
+
+Nous sommes toujours sur la branche master. Le fichier a maintenant été ajouté à la liste des fichiers suivis par le gestionnaire de version (indiqué par la couleur verte dans le terminal) : si on commit le projet, ce fichier sera utilisé.
+
+6. git commit -m "Message"
+
+Lors du commit, Git indique qu'un fichier a été changé (puisqu'il a été ajouté !) mais qu'il n'y a ni ajout ni suppression par rapport aux anciennes versions du projet.
+
+7. git status :
+Sur la branche master
+rien à valider, la copie de travail est propre
+
+Lorsque l'on affiche le statut du projet, Git indique donc qu'il n'y a pas de modification dans nos fichiers.
+
+8. git log -p :
+commit aaaf31f07539047ec8e6682e88dfe5b2a755945b
+Author: 3407915 <mina.pecheux@etu.upmc.fr>
+Date:   Thu Oct 27 09:08:56 2016 +0200
+
+    Message
+
+diff --git a/test.txt b/test.txt
+new file mode 100644
+index 0000000..e69de29
+
+La commande affiche l'historique des modifications du projet avec, pour chaque, dans l'ordre :
+- la clé SHA-1 du commit
+- le nom de l'auteur de la modification
+- la date de la modification
+- le message d'explication de la modification
+- les différences avec la version précédente du projet (ici l'ajout d'un nouveau fichier appelé "test.txt").
+
+9. Editons notre fichier de test :
+   cat > test.txt
+   Test de modification de fichier.
+
+Vérifions maintenant le résultat de la commande git diff :
+diff --git a/test.txt b/test.txt
+index e69de29..45c4b36 100644
+--- a/test.txt
++++ b/test.txt
+@@ -0,0 +1 @@
++Test de modification de fichier.
+
+On obtient le résultat prévu : Git indique quel fichier a été modifié et de quelle façon. En l'occurrence, on voit qu'il y a eu un ajout d'une ligne de texte (indiqué par le "+" au début de la ligne précisant le contenu de l'ajout).
+
+
+EXERCICE 2
+-----------------------------------------------------------
+1. git branch test
+   git branch :
+* master
+  test
+
+Git nous affiche bien deux branches : celle par défaut et sur laquelle on se trouve (ce qui est indiqué par l'astérisque au début de la ligne) et celle que l'on vient de créer, la branche test.
+
+2. cat >> test.txt
+3. git checkout test
+
+On peut vérifier que l'on a bien changé de branche à l'aide de git branch :
+  master
+* test
+
+On peut alors créer un nouveau fichier et le commiter avec les commandes vues auparavant :
+cat > nouv_fichier.txt
+git add nouv_fichier.txt
+git commit -m "Ajout d'un nouveau fichier."
+
+4 . git log --graph --decorate --oneline --all :
+* 023965b (HEAD, test) Ajout d'un nouveau fichier.
+* aaaf31f (master) Message
+
+Git nous indique, branche par branche (et en indiquant la branche actuelle), les messages des derniers commits.
+(Note : on voit qu'il y a des index pour chaque modification)
+
+5. On peut maintenant merger les deux branches :
+- on repasse sur la branche principale : git checkout master
+
+- on merge la branche test : git merge test
+Mise à jour aaaf31f..023965b
+Fast-forward
+ nouv_fichier.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 nouv_fichier.txt
+
+On voit bien qu'il y a une fusion du nouveau fichier créé sur la branche test.
+
+- on vérifie l'état actuel de notre projet : git log --graph --decorate --oneline --all
+* 023965b (HEAD, test, master) Ajout d'un nouveau fichier.
+* aaaf31f Message
+
+On voit que maintenant, le message de commit du nouveau fichier a pour refname
+(Note : on retrouve les index des modifications)
+
+6. Testons les gestions de conflits de branche à branche :
+- on effectue une modification dans le fichier "test.txt" dans la branche master :
+emacs test.txt &
+
+- on commit le changement
+git commit -m "Modif branche master."
+
+- on passe sur la branche test
+git checkout test
+
+- on effectue une modification dans le fichier "test.txt" dans la branche test :
+emacs test.txt &
+
+- on commit le changement
+git commit -m "Modif branche test."
+
+- on revient sur la branche master
+git checkout master
+
+- on essaie de fusionner les deux versions de "test.txt" :
+git merge test
+
+Fusion automatique de test.txt
+CONFLIT (contenu) : Conflit de fusion dans test.txt
+La fusion automatique a échoué ; réglez les conflits et validez le résultat.
+
+Git repère que la même ligne a été éditée dans le fichier sur deux branches différentes et annule la fusion pour laisser le soin à l'utilisateur de régler le conflit.
+On remarque, en ouvrant le fichier test.txt, que Git nous indique le problème de conflit :
+
+<<<<<<< HEAD
+Nouveau contenu de fichier.
+Et une autre ligne. Modif dans la branche master.
+=======
+Test de modif dans la branche test.
+>>>>>>> test
+
+7. En éditant le fichier pour ne plus avoir de conflit, on peut ensuite fusionner les branches sans problème avec les commandes ci-dessus et en suivant les instructions de Git.
+
+8. On peut supprimer la branche test : git branch -d test
+(La commande git branch nous permet de vérifier qu'il ne reste plus que la branche master.)
