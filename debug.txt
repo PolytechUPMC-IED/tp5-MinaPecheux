@@ -1,0 +1,128 @@
+EXERCICE 5
+------------------------------------------
+1. gcc -g -o hello hello.c
+2. valgrind ./hello
+==4617== Memcheck, a memory error detector
+==4617== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==4617== Using Valgrind-3.10.1 and LibVEX; rerun with -h for copyright info
+==4617== Command: ./hello
+==4617== 
+Hello You !
+==4617== 
+==4617== HEAP SUMMARY:
+==4617==     in use at exit: 0 bytes in 0 blocks
+==4617==   total heap usage: 0 allocs, 0 frees, 0 bytes allocated
+==4617== 
+==4617== All heap blocks were freed -- no leaks are possible
+==4617== 
+==4617== For counts of detected and suppressed errors, rerun with: -v
+==4617== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 1 from 1)
+
+On a un debug de l'ensemble des erreurs mémoire. Ici, il n'y a pas d'erreur, on le voit avec la dernière ligne : ERROR SUMMARY: 0 errors.
+
+3. L'en-tête (5 premières lignes) précise simplement que l'on utilise valgrind sur l'exécutable hello.
+Ici, le programme n'utilise pas d'allocation dynamique de mémoire.
+Le résumé d'utilisation de mémoire indique donc qu'il n'y a eu aucune allocation et aucune libération de mémoire (donc 0 bits alloués).
+Valgrind précise ensuite que tous les blocs alloués ont été libérés (puisqu'il n'y en a pas !) et qu'il n'y a pas de fuite mémoire.
+Enfin, on a une ligne résumant le nombre d'erreurs détectées, ici 0.
+
+4. gcc -g -o mem mem.c
+   valgrind ./mem
+
+==4726== Memcheck, a memory error detector
+==4726== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==4726== Using Valgrind-3.10.1 and LibVEX; rerun with -h for copyright info
+==4726== Command: ./mem
+==4726== 
+==4726== Invalid write of size 4
+==4726==    at 0x4004FD: main (mem.c:6)
+==4726==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+==4726== 
+==4726== 
+==4726== Process terminating with default action of signal 11 (SIGSEGV)
+==4726==  Access not within mapped region at address 0x0
+==4726==    at 0x4004FD: main (mem.c:6)
+==4726==  If you believe this happened as a result of a stack
+==4726==  overflow in your program's main thread (unlikely but
+==4726==  possible), you can try to increase the size of the
+==4726==  main thread stack using the --main-stacksize= flag.
+==4726==  The main thread stack size used in this run was 8388608.
+==4726== 
+==4726== HEAP SUMMARY:
+==4726==     in use at exit: 0 bytes in 0 blocks
+==4726==   total heap usage: 0 allocs, 0 frees, 0 bytes allocated
+==4726== 
+==4726== All heap blocks were freed -- no leaks are possible
+==4726== 
+==4726== For counts of detected and suppressed errors, rerun with: -v
+==4726== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 1 from 1)
+Erreur de segmentation
+
+5. Valgrind nous indique une erreur de segmentation (autrement dit un accès à une partie de la mémoire non allouée au programme) à la ligne 6. On sait également quelle adresse a provoqué l'erreur (0x4004FD), dans quelle fonction l'erreur a lieu (le main()) et comment le processus a été terminé (le signal envoyé pour le terminer).
+(Note : en effet, on voit dans le programme qu'on essaie d'accéder à la valeur d'un pointeur initialisé à NULL, donc cette adresse n'est pas accessible !)
+
+D'autre part, il n'y a toujours pas d'allocation dynamique de mémoire, donc on a le même résumé sur l'allocation et la libération de mémoire dynamique qu'auparavant.
+
+6. On voit dans le fichier mem2.c qu'il n'y a pas d'allocation de mémoire pour le tableau d'entiers p, il est donc impossible d'accéder aux cases mémoire du tableau.
+On ajoute une allocation dynamique de mémoire pour régler le problème :
+p = (int*)malloc(size * sizeof(int));
+
+(Note : la mémoire est bien libérée à la fin du programme par un free(), on peut le vérifier avec Valgrind)
+
+7. En décommentant les dernières lignes du fichier mem2.c, on obtient avec le debug de Valgrind :
+==4831== Memcheck, a memory error detector
+==4831== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==4831== Using Valgrind-3.10.1 and LibVEX; rerun with -h for copyright info
+==4831== Command: ./mem2
+==4831== 
+Entrez un nombre
+8
+==4831== Invalid read of size 4
+==4831==    at 0x4006C1: main (mem2.c:19)
+==4831==  Address 0x51fc040 is 0 bytes inside a block of size 32 free'd
+==4831==    at 0x4C2BDEC: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==4831==    by 0x4006A3: main (mem2.c:15)
+==4831== 
+==4831== 
+==4831== HEAP SUMMARY:
+==4831==     in use at exit: 0 bytes in 0 blocks
+==4831==   total heap usage: 1 allocs, 1 frees, 32 bytes allocated
+==4831== 
+==4831== All heap blocks were freed -- no leaks are possible
+==4831== 
+==4831== For counts of detected and suppressed errors, rerun with: -v
+==4831== ERROR SUMMARY: 8 errors from 1 contexts (suppressed: 1 from 1)
+
+En effet, on a déjà libéré le tableau p avant d'essayer de ré-accéder à ses éléments dans la boucle à la fin du programme.
+Il faut donc déplacer la fonction de libération de la mémoire après cette boucle.
+
+8. On compile mem3.c et on debug avec Valgrind :
+==4867== Memcheck, a memory error detector
+==4867== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==4867== Using Valgrind-3.10.1 and LibVEX; rerun with -h for copyright info
+==4867== Command: ./mem3
+==4867== 
+Entrez un nombre
+4
+==4867== 
+==4867== HEAP SUMMARY:
+==4867==     in use at exit: 32 bytes in 1 blocks
+==4867==   total heap usage: 5 allocs, 4 frees, 96 bytes allocated
+==4867== 
+==4867== LEAK SUMMARY:
+==4867==    definitely lost: 32 bytes in 1 blocks
+==4867==    indirectly lost: 0 bytes in 0 blocks
+==4867==      possibly lost: 0 bytes in 0 blocks
+==4867==    still reachable: 0 bytes in 0 blocks
+==4867==         suppressed: 0 bytes in 0 blocks
+==4867== Rerun with --leak-check=full to see details of leaked memory
+==4867== 
+==4867== For counts of detected and suppressed errors, rerun with: -v
+==4867== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 1 from 1)
+
+Valgrind nous indique qu'il y a eu 5 allocations mémoire mais seulement 4 libérations : on a donc perdu une partie des donnés (32 bits très précisément). Il y a eu une fuite mémoire.
+
+9. La commande : valgrind --leak-check=full ./mem3 nous précise que l'erreur se trouve dans le main(), à la ligne 11.
+
+10. En effet, on construit dynamiquement un tableau d'entiers à deux dimensions p, et à la fin du programme on libère bien chacun des sous-tableaux mais pas le tableau lui-même.
+Il faut donc ajouter une ligne pour libérer la mémoire allouée à p : free(p);
